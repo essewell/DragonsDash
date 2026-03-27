@@ -1,0 +1,178 @@
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@300;400;500;600;700&family=Libre+Baskerville:wght@400;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* Core palette */
+    --color-navy-900: #0A192F;
+    --color-navy-800: #0F2744;
+    --color-navy-700: #153560;
+    --color-navy-600: #1B4380;
+    --color-navy-500: #2151A0;
+    --color-navy-400: #4A6FBF;
+    --color-navy-300: #7A9AD9;
+    --color-navy-200: #A8C1E8;
+    --color-navy-100: #D4E0F4;
+    --color-navy-50: #EAF0FA;
+
+    /* Warm neutrals */
+    --color-warm-50: #FAFAF7;
+    --color-warm-100: #F5F5F0;
+    --color-warm-200: #E8E8E0;
+    --color-warm-300: #D4D4C8;
+    --color-warm-400: #B0B0A4;
+    --color-warm-500: #8C8C80;
+    --color-warm-600: #68685C;
+    --color-warm-700: #4A4A40;
+    --color-warm-800: #2C2C24;
+    --color-warm-900: #1A1A14;
+
+    /* Accent */
+    --color-burnt: #CC5500;
+    --color-burnt-light: #E06800;
+    --color-burnt-dark: #A84400;
+
+    /* Semantic */
+    --color-forest: #228B22;
+    --color-forest-light: #2EA32E;
+    --color-forest-dark: #1A6B1A;
+    --color-amber: #D4A017;
+    --color-amber-light: #E8B42A;
+    --color-amber-dark: #B08810;
+    --color-danger: #DC2626;
+
+    /* Spacing (8px grid) */
+    --space-unit: 8px;
+
+    /* Layout */
+    --sidebar-width: 240px;
+    --header-height: 56px;
+  }
+
+  * {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+  }
+
+  html {
+    font-size: 15px;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+  }
+
+  body {
+    font-family: 'IBM Plex Sans', system-ui, sans-serif;
+    background-color: var(--color-warm-100);
+    color: var(--color-warm-900);
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'Libre Baskerville', Georgia, serif;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+  }
+
+  /* Monospace numerals for all financial data */
+  .font-mono {
+    font-family: 'IBM Plex Mono', 'SF Mono', Menlo, monospace;
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* Scrollbar styling */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: var(--color-warm-300);
+    border-radius: 3px;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: var(--color-warm-400);
+  }
+
+  /* Selection */
+  ::selection {
+    background: var(--color-navy-200);
+    color: var(--color-navy-900);
+  }
+}
+
+@layer components {
+  /* Financial number formatting */
+  .financial {
+    font-family: 'IBM Plex Mono', 'SF Mono', Menlo, monospace;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.02em;
+  }
+
+  .financial-positive {
+    color: var(--color-forest);
+  }
+
+  .financial-negative {
+    color: var(--color-danger);
+  }
+
+  /* Zebra striped tables */
+  .table-zebra tbody tr:nth-child(even) {
+    background-color: var(--color-warm-50);
+  }
+
+  .table-zebra tbody tr:nth-child(odd) {
+    background-color: #FFFFFF;
+  }
+
+  /* Dense data rows */
+  .data-row {
+    height: 36px;
+    padding: 0 12px;
+    display: flex;
+    align-items: center;
+    border-bottom: 1px solid var(--color-warm-200);
+  }
+
+  .data-row:last-child {
+    border-bottom: none;
+  }
+
+  /* 12-column grid */
+  .grid-12 {
+    display: grid;
+    grid-template-columns: repeat(12, minmax(0, 1fr));
+    gap: 32px;
+  }
+
+  /* Card base */
+  .card {
+    background: #FFFFFF;
+    border: 1px solid var(--color-warm-200);
+    border-radius: 2px;
+    box-shadow: 0 1px 3px rgba(10, 25, 47, 0.06);
+  }
+
+  /* Section rhythm */
+  .section-gap {
+    margin-bottom: 32px;
+  }
+}
+
+@layer utilities {
+  /* Screenshot prevention (applied via JS) */
+  .secure-view {
+    -webkit-user-select: none;
+    user-select: none;
+  }
+}
