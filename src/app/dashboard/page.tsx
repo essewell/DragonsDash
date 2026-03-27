@@ -11,7 +11,7 @@ import {
 } from "lucide-react";
 import clsx from "clsx";
 import { AppShell } from "@/components/layout";
-import { Card, CardHeader, Sparkline, Badge } from "@/components/ui";
+import { Card, CardHeader, Sparkline, Badge, AnimatedCurrency } from "@/components/ui";
 import { useAppStore } from "@/store";
 import Link from "next/link";
 
@@ -113,35 +113,27 @@ export default function DashboardPage() {
                 </div>
               ) : (
                 <>
-                  <span
+                  <AnimatedCurrency
+                    value={netWorth}
                     className={clsx(
                       "font-mono text-3xl font-semibold tabular-nums",
                       netWorth >= 0 ? "text-warm-900" : "text-danger",
                     )}
-                  >
-                    {new Intl.NumberFormat("en-CA", {
-                      style: "currency",
-                      currency: "CAD",
-                    }).format(netWorth)}
-                  </span>
+                  />
                   <div className="flex gap-4 ml-auto">
                     <div className="text-right">
                       <p className="text-2xs text-warm-500">Assets</p>
-                      <p className="font-mono text-sm tabular-nums text-forest">
-                        {new Intl.NumberFormat("en-CA", {
-                          style: "currency",
-                          currency: "CAD",
-                        }).format(totalAssets)}
-                      </p>
+                      <AnimatedCurrency
+                        value={totalAssets}
+                        className="font-mono text-sm tabular-nums text-forest"
+                      />
                     </div>
                     <div className="text-right">
                       <p className="text-2xs text-warm-500">Liabilities</p>
-                      <p className="font-mono text-sm tabular-nums text-danger">
-                        {new Intl.NumberFormat("en-CA", {
-                          style: "currency",
-                          currency: "CAD",
-                        }).format(totalLiabilities)}
-                      </p>
+                      <AnimatedCurrency
+                        value={totalLiabilities}
+                        className="font-mono text-sm tabular-nums text-danger"
+                      />
                     </div>
                   </div>
                 </>
@@ -207,17 +199,14 @@ export default function DashboardPage() {
                               </span>
                             )}
                           </div>
-                          <span
+                          <AnimatedCurrency
+                            value={balance}
+                            currency={account.currency}
                             className={clsx(
                               "font-mono text-sm tabular-nums",
                               balance >= 0 ? "text-warm-800" : "text-danger",
                             )}
-                          >
-                            {new Intl.NumberFormat("en-CA", {
-                              style: "currency",
-                              currency: account.currency,
-                            }).format(balance)}
-                          </span>
+                          />
                         </div>
                       );
                     })}
@@ -246,12 +235,11 @@ export default function DashboardPage() {
                               {account.name}
                             </span>
                           </div>
-                          <span className="font-mono text-sm tabular-nums text-warm-800">
-                            {new Intl.NumberFormat("en-CA", {
-                              style: "currency",
-                              currency: account.currency,
-                            }).format(balance)}
-                          </span>
+                          <AnimatedCurrency
+                            value={balance}
+                            currency={account.currency}
+                            className="font-mono text-sm tabular-nums text-warm-800"
+                          />
                         </div>
                       );
                     })}
@@ -280,12 +268,11 @@ export default function DashboardPage() {
                               {account.name}
                             </span>
                           </div>
-                          <span className="font-mono text-sm tabular-nums text-danger">
-                            {new Intl.NumberFormat("en-CA", {
-                              style: "currency",
-                              currency: account.currency,
-                            }).format(Math.abs(balance))}
-                          </span>
+                          <AnimatedCurrency
+                            value={Math.abs(balance)}
+                            currency={account.currency}
+                            className="font-mono text-sm tabular-nums text-danger"
+                          />
                         </div>
                       );
                     })}
@@ -301,14 +288,16 @@ export default function DashboardPage() {
           {/* Monthly Spending */}
           <Card padding="lg">
             <CardHeader title="This Month" subtitle="Total spending" />
-            <span className="font-mono text-2xl tabular-nums text-warm-900">
-              {transactions.length === 0
-                ? "—"
-                : new Intl.NumberFormat("en-CA", {
-                    style: "currency",
-                    currency: "CAD",
-                  }).format(monthlySpending)}
-            </span>
+            {transactions.length === 0 ? (
+              <span className="font-mono text-2xl text-warm-400 tabular-nums">
+                —
+              </span>
+            ) : (
+              <AnimatedCurrency
+                value={monthlySpending}
+                className="font-mono text-2xl tabular-nums text-warm-900"
+              />
+            )}
           </Card>
 
           {/* Upcoming Bills */}

@@ -12,9 +12,9 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 
 const variantStyles: Record<ButtonVariant, string> = {
   primary:
-    "bg-burnt text-white hover:bg-burnt-light active:bg-burnt-dark border border-burnt",
+    "bg-burnt text-white hover:bg-burnt-light active:bg-burnt-dark border border-burnt hover:shadow-[0_2px_8px_rgba(204,85,0,0.25)]",
   secondary:
-    "bg-white text-warm-900 border border-warm-300 hover:bg-warm-50 active:bg-warm-100",
+    "bg-white text-warm-900 border border-warm-300 hover:bg-warm-50 active:bg-warm-100 hover:border-warm-400",
   ghost:
     "bg-transparent text-warm-700 hover:bg-warm-100 active:bg-warm-200 border border-transparent",
   danger:
@@ -34,9 +34,11 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
         ref={ref}
         className={clsx(
           "inline-flex items-center justify-center font-sans font-medium",
-          "rounded transition-colors duration-150",
+          "rounded",
+          "transition-all duration-150 ease-out",
+          "active:scale-[0.97]",
           "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-burnt focus-visible:ring-offset-1",
-          "disabled:opacity-50 disabled:cursor-not-allowed",
+          "disabled:opacity-50 disabled:cursor-not-allowed disabled:active:scale-100",
           variantStyles[variant],
           sizeStyles[size],
           className,

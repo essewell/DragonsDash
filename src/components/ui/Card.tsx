@@ -5,6 +5,7 @@ interface CardProps {
   children: ReactNode;
   className?: string;
   padding?: "none" | "sm" | "md" | "lg";
+  hover?: boolean;
 }
 
 const paddingStyles = {
@@ -14,11 +15,18 @@ const paddingStyles = {
   lg: "p-4",
 };
 
-export function Card({ children, className, padding = "md" }: CardProps) {
+export function Card({
+  children,
+  className,
+  padding = "md",
+  hover = false,
+}: CardProps) {
   return (
     <div
       className={clsx(
         "bg-white border border-warm-200 rounded shadow-card",
+        "transition-shadow duration-200 ease-out",
+        hover && "hover:shadow-[0_2px_8px_rgba(10,25,47,0.08)] hover:border-warm-300",
         paddingStyles[padding],
         className,
       )}
