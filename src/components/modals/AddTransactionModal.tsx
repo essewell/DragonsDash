@@ -16,7 +16,7 @@ import {
 import clsx from "clsx";
 import { useAppStore } from "@/store";
 import { Button, Input } from "@/components/ui";
-import type { Transaction, TransactionType, Currency } from "@/types";
+import type { Transaction, TransactionType, Currency, AccountContainerType } from "@/types";
 
 interface AddTransactionModalProps {
   isOpen: boolean;
@@ -43,7 +43,7 @@ export function AddTransactionModal({
   isOpen,
   onClose,
 }: AddTransactionModalProps) {
-  const { accounts, subAccounts, categories, addTransaction } =
+  const { accounts, subAccounts, categories, addTransaction, addSubAccount } =
     useAppStore();
 
   const [step, setStep] = useState<Step>("account");
@@ -51,6 +51,8 @@ export function AddTransactionModal({
 
   // Form state
   const [selectedSubAccountId, setSelectedSubAccountId] = useState("");
+  const [selectedAccountId, setSelectedAccountId] = useState("");
+  const [isDirectAccount, setIsDirectAccount] = useState(false);
   const [amount, setAmount] = useState("");
   const [transactionType, setTransactionType] =
     useState<TransactionType>("expense");
@@ -92,6 +94,8 @@ export function AddTransactionModal({
     // Reset form
     setStep("account");
     setSelectedSubAccountId("");
+    setSelectedAccountId("");
+    setIsDirectAccount(false);
     setAmount("");
     setTransactionType("expense");
     setMerchant("");
@@ -132,14 +136,27 @@ export function AddTransactionModal({
   };
 
   const handleSubmit = () => {
-    const subAccount = subAccounts.find(
-      (sa) => sa.id === selectedSubAccountId,
-    );
-    if (!subAccount) return;
+    let targetSubAccountId = selectedSubAccountId;
+
+    // If user selected an account directly (no sub-account), create a default one
+    if (isDirectAccount) {
+      const account = accounts.find((a) => a.id === selectedAccountId);
+      if (!account) return;
+
+      const newSubId = uuid();
+      addSubAccount({
+        id: newSubId,
+        accountId: selectedAccountId,
+        name: `${account.name} — General`,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      });
+      targetSubAccountId = newSubId;
+    }
 
     const transaction: Transaction = {
       id: uuid(),
-      subAccountId: selectedSubAccountId,
+      subAccountId: targetSubAccountId,
       type: transactionType,
       amount: parseFloat(amount),
       currency,
@@ -160,29 +177,100 @@ export function AddTransactionModal({
     handleClose();
   };
 
-  // Filter sub-accounts for search
-  const filteredSubAccounts = subAccounts.filter((sa) => {
-    if (!searchQuery) return true;
-    const q = searchQuery.toLowerCase();
-    const account = accounts.find((a) => a.id === sa.accountId);
+  // Filter accounts and sub-accounts for search
+  const q = searchQuery.toLowerCase();
+
+  // Build a unified list of selectable targets
+  // Each entry represents either a sub-account or a "self" account (no subs)
+  interface SelectableTarget {
+    id: string;
+    name: string;
+    accountName: string;
+    accountType: AccountContainerType;
+    isSubAccount: boolean;
+    accountId: string;
+  }
+
+  const allTargets: SelectableTarget[] = [];
+
+  for (const account of accounts) {
+    const subs = subAccounts.filter((sa) => sa.accountId === account.id);
+
+    if (subs.length > 0) {
+      for (const sub of subs) {
+        allTargets.push({
+          id: sub.id,
+          name: sub.name,
+          accountName: account.name,
+          accountType: account.type,
+          isSubAccount: true,
+          accountId: account.id,
+        });
+      }
+    } else {
+      // Account with no sub-accounts — selectable directly
+      allTargets.push({
+        id: account.id,
+        name: account.name,
+        accountName: account.name,
+        accountType: account.type,
+        isSubAccount: false,
+        accountId: account.id,
+      });
+    }
+  }
+
+  const filteredTargets = allTargets.filter((t) => {
+    if (!q) return true;
     return (
-      sa.name.toLowerCase().includes(q) ||
-      (account?.name.toLowerCase().includes(q) ?? false)
+      t.name.toLowerCase().includes(q) ||
+      t.accountName.toLowerCase().includes(q) ||
+      t.accountType.toLowerCase().includes(q)
     );
   });
 
-  // Recently used sub-accounts (for pinning)
-  const recentSubAccountIds = useAppStore
+  // Recently used targets
+  const recentTxnSubIds = useAppStore
     .getState()
     .getRecentTransactions(5)
     .map((t) => t.subAccountId);
-  const uniqueRecent = [...new Set(recentSubAccountIds)];
-  const recentSubs = filteredSubAccounts.filter((sa) =>
-    uniqueRecent.includes(sa.id),
+  const uniqueRecentIds = [...new Set(recentTxnSubIds)];
+  const recentTargets = filteredTargets.filter((t) =>
+    uniqueRecentIds.includes(t.id),
   );
-  const otherSubs = filteredSubAccounts.filter(
-    (sa) => !uniqueRecent.includes(sa.id),
+  const otherTargets = filteredTargets.filter(
+    (t) => !uniqueRecentIds.includes(t.id),
   );
+
+  // Group other targets by account type
+  const typeOrder: AccountContainerType[] = [
+    "chequing", "savings", "hisa", "cash",
+    "tfsa", "rrsp", "fhsa", "resp", "nonregistered", "crypto",
+    "credit_card", "loan", "recurring",
+  ];
+  const typeLabels: Record<AccountContainerType, string> = {
+    chequing: "Chequing", savings: "Savings", hisa: "HISA", cash: "Cash",
+    tfsa: "TFSA", rrsp: "RRSP", fhsa: "FHSA", resp: "RESP",
+    nonregistered: "Non-Registered", crypto: "Crypto",
+    credit_card: "Credit Card", loan: "Loan", recurring: "Recurring",
+  };
+
+  const groupedTargets = typeOrder
+    .map((type) => ({
+      type,
+      label: typeLabels[type],
+      items: otherTargets.filter((t) => t.accountType === type),
+    }))
+    .filter((g) => g.items.length > 0);
+
+  const selectTarget = (target: SelectableTarget) => {
+    // If selecting an account directly (no sub-account), we store the account ID
+    // and will create a default sub-account on submit
+    setSelectedSubAccountId(target.id);
+    setSelectedAccountId(target.accountId);
+    setIsDirectAccount(!target.isSubAccount);
+    goNext();
+  };
 
   if (!isOpen) return null;
 
@@ -263,90 +351,81 @@ export function AddTransactionModal({
               </div>
 
               {/* Recently used */}
-              {recentSubs.length > 0 && !searchQuery && (
+              {recentTargets.length > 0 && !searchQuery && (
                 <div>
                   <p className="text-2xs text-warm-400 uppercase tracking-wider mb-1">
                     Recently used
                   </p>
                   <div className="flex flex-col gap-[2px]">
-                    {recentSubs.map((sa) => {
-                      const account = accounts.find(
-                        (a) => a.id === sa.accountId,
-                      );
-                      return (
+                    {recentTargets.map((target) => (
+                      <button
+                        key={target.id}
+                        onClick={() => selectTarget(target)}
+                        className={clsx(
+                          "flex items-center justify-between h-[40px] px-3 rounded text-left",
+                          "hover:bg-warm-50 transition-colors",
+                          selectedSubAccountId === target.id &&
+                            "bg-navy-50 border border-navy-200",
+                        )}
+                      >
+                        <div>
+                          <p className="text-sm text-warm-800">
+                            {target.name}
+                          </p>
+                          {target.name !== target.accountName && (
+                            <p className="text-2xs text-warm-400">
+                              {target.accountName}
+                            </p>
+                          )}
+                        </div>
+                        <span className="text-2xs text-warm-500 uppercase">
+                          {typeLabels[target.accountType]}
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* All accounts grouped by type */}
+              <div className="flex flex-col gap-3">
+                {groupedTargets.map((group) => (
+                  <div key={group.type}>
+                    <p className="text-2xs text-warm-400 uppercase tracking-wider mb-[2px]">
+                      {group.label}
+                    </p>
+                    <div className="flex flex-col gap-[2px]">
+                      {group.items.map((target) => (
                         <button
-                          key={sa.id}
-                          onClick={() => {
-                            setSelectedSubAccountId(sa.id);
-                            goNext();
-                          }}
+                          key={target.id}
+                          onClick={() => selectTarget(target)}
                           className={clsx(
                             "flex items-center justify-between h-[40px] px-3 rounded text-left",
                             "hover:bg-warm-50 transition-colors",
-                            selectedSubAccountId === sa.id &&
+                            selectedSubAccountId === target.id &&
                               "bg-navy-50 border border-navy-200",
                           )}
                         >
                           <div>
                             <p className="text-sm text-warm-800">
-                              {sa.name}
+                              {target.name}
                             </p>
-                            {account && (
+                            {target.name !== target.accountName && (
                               <p className="text-2xs text-warm-400">
-                                {account.name}
+                                {target.accountName}
                               </p>
                             )}
                           </div>
-                          {account && (
-                            <span className="text-2xs text-warm-500 uppercase">
-                              {account.type}
-                            </span>
-                          )}
+                          <span className="text-2xs text-warm-500 uppercase">
+                            {target.isSubAccount ? "Sub" : "Account"}
+                          </span>
                         </button>
-                      );
-                    })}
+                      ))}
+                    </div>
                   </div>
-                </div>
-              )}
+                ))}
 
-              {/* All accounts */}
-              <div className="flex flex-col gap-[2px]">
-                {otherSubs.map((sa) => {
-                  const account = accounts.find(
-                    (a) => a.id === sa.accountId,
-                  );
-                  return (
-                    <button
-                      key={sa.id}
-                      onClick={() => {
-                        setSelectedSubAccountId(sa.id);
-                        goNext();
-                      }}
-                      className={clsx(
-                        "flex items-center justify-between h-[40px] px-3 rounded text-left",
-                        "hover:bg-warm-50 transition-colors",
-                        selectedSubAccountId === sa.id &&
-                          "bg-navy-50 border border-navy-200",
-                      )}
-                    >
-                      <div>
-                        <p className="text-sm text-warm-800">{sa.name}</p>
-                        {account && (
-                          <p className="text-2xs text-warm-400">
-                            {account.name}
-                          </p>
-                        )}
-                      </div>
-                      {account && (
-                        <span className="text-2xs text-warm-500 uppercase">
-                          {account.type}
-                        </span>
-                      )}
-                    </button>
-                  );
-                })}
-
-                {filteredSubAccounts.length === 0 && (
+                {filteredTargets.length === 0 && (
                   <p className="text-sm text-warm-400 text-center py-8">
                     {accounts.length === 0
                       ? "Create an account first"
